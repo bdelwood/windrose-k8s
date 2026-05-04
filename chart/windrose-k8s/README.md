@@ -1,6 +1,6 @@
 # windrose-k8s
 
-![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.0.5](https://img.shields.io/badge/AppVersion-1.0.5-informational?style=flat-square)
+![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: v1.0.5](https://img.shields.io/badge/AppVersion-v1.0.5-informational?style=flat-square)
 
 A basic chart to deploy Windrose dedicated servers.
 
@@ -46,14 +46,16 @@ Kubernetes: `>=1.32.0-0`
 | imagePullSecrets | list | `[]` | Image pull secrets for accessing private container registries. Each entry is an object with a `name` field, e.g. `[{ name: my-registry-creds }]`. |
 | nameOverride | string | `""` | Override the name of the chart. Default is the chart name. |
 | nodeSelector | object | `{}` | Node selector for pod scheduling. |
-| persistence.accessMode | string | `"ReadWriteOnce"` | Access mode for the persistent volume. |
+| persistence.accessMode | string | `"ReadWriteOncePod"` | Access mode for the persistent volume. |
 | persistence.enabled | bool | `true` | Enable or disable persistence. |
 | persistence.existingClaim | string | `""` | Name of an existing persistentVolumeClaim. |
 | persistence.preventDelete | bool | `true` | Prevent Helm from deleting the PVC. Some storageClasses (such as the local-path-provisioner installed by default by k3s) have reclaimPolicy: Delete. |
 | persistence.size | string | `"40Gi"` | Size of the persistent volume. The image needs ~35 GiB for the Wine prefix and game files; default leaves headroom for saves. |
 | persistence.storageClassName | string | `""` | Storage class name for the PVC. |
 | podAnnotations | object | `{}` | Annotations to add to the pod. |
-| podSecurityContext | object | `{"fsGroup":1000}` | Security context for the pod. `fsGroup: 1000` matches the `steam` user inside the image so the PVC is writable. |
+| podDisruptionBudget.enabled | bool | `false` | Create a PodDisruptionBudget to block voluntary disruptions while the server is running. Recommended when players are connected; admins can `kubectl delete pdb` to unblock maintenance. |
+| podDisruptionBudget.maxUnavailable | int | `0` | `maxUnavailable: 0` blocks all voluntary evictions. Tune only if you know what you're doing. |
+| podSecurityContext | object | `{"fsGroup":1000}` | Security context for the pod. `fsGroup: 1000` matches the `steam` user inside the image so the PVC is writable. To opt into AppArmor on a host that has it enabled, add:   appArmorProfile:     type: RuntimeDefault |
 | probes | object | `{"liveness":{},"readiness":{},"startup":{}}` | Startup, liveness, and readiness probes. |
 | probes.liveness | object | `{}` | Liveness probe. |
 | probes.readiness | object | `{}` | Readiness probe. Use the dashboard port when Windrose+ is enabled. |

@@ -128,7 +128,7 @@ persistence:
   # -- Storage class name for the PVC.
   storageClassName: ""
   # -- Access mode for the persistent volume.
-  accessMode: ReadWriteOnce
+  accessMode: ReadWriteOncePod
   # -- Prevent Helm from deleting the PVC.
   # Some storageClasses (such as the local-path-provisioner installed by default by k3s) have reclaimPolicy: Delete.
   preventDelete: true
@@ -183,6 +183,14 @@ serviceAccount:
   # -- The name of the service account.
   name: ""
 
+podDisruptionBudget:
+  # -- Create a PodDisruptionBudget to block voluntary disruptions while the server is running. Recommended when players
+  # are connected; admins can `kubectl delete pdb` to unblock maintenance.
+  enabled: false
+  # -- `maxUnavailable: 0` blocks all voluntary evictions. Tune only if you
+  # know what you're doing.
+  maxUnavailable: 0
+
 # -- Node selector for pod scheduling.
 nodeSelector: {}
 
@@ -197,6 +205,9 @@ podAnnotations: {}
 
 # -- Security context for the pod.
 # `fsGroup: 1000` matches the `steam` user inside the image so the PVC is writable.
+# To opt into AppArmor on a host that has it enabled, add:
+#   appArmorProfile:
+#     type: RuntimeDefault
 podSecurityContext:
   fsGroup: 1000
 
