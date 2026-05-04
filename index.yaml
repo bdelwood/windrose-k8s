@@ -1,0 +1,19 @@
+apiVersion: v1
+entries:
+  windrose-k8s:
+  - apiVersion: v2
+    appVersion: v1.0.5
+    created: "2026-05-04T05:33:39.37447862Z"
+    description: A basic chart to deploy Windrose dedicated servers.
+    digest: 1ac46510f83b80025cd72a86bef034107bf6617827a29739c71dcad479379a0f
+    keywords:
+    - windrose
+    kubeVersion: '>=1.32.0-0'
+    name: windrose-k8s
+    sources:
+    - https://github.com/bdelwood/windrose-k8s
+    type: application
+    urls:
+    - https://github.com/bdelwood/windrose-k8s/releases/download/windrose-k8s-0.1.0/windrose-k8s-0.1.0.tgz
+    version: 0.1.0
+generated: "2026-05-04T05:33:39.374489591Z"
