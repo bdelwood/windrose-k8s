@@ -1,0 +1,105 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "windrose-k8s.fullname" . }}
+  labels:
+    {{- include "windrose-k8s.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "windrose-k8s.selectorLabels" . | nindent 6 }}
+  {{- if .Values.updateStrategy }}
+  strategy: {{- toYaml .Values.updateStrategy | nindent 4 }}
+  {{- end }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "windrose-k8s.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "windrose-k8s.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      restartPolicy: Always
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "windrose-k8s.fullname" . }}
+          env:
+            - name: SERVER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ default (include "windrose-k8s.fullname" .) .Values.gameServer.existingSecret | quote }}
+                  key: server-password
+            {{- if .Values.windrosePlus.enabled }}
+            - name: WINDROSE_PLUS_RCON_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ default (include "windrose-k8s.fullname" .) .Values.windrosePlus.existingSecret | quote }}
+                  key: windrose-plus-rcon-password
+            {{- end }}
+          ports:
+            - name: gameserver-tcp
+              containerPort: {{ .Values.gameServer.directConnection.service.port | int }}
+              protocol: TCP
+            - name: gameserver-udp
+              containerPort: {{ .Values.gameServer.directConnection.service.port | int }}
+              protocol: UDP
+            {{- if .Values.windrosePlus.enabled }}
+            - name: dashboard
+              containerPort: {{ .Values.windrosePlus.service.port | int }}
+              protocol: TCP
+            {{- end }}
+          volumeMounts:
+          {{- if .Values.persistence.enabled }}
+            - mountPath: /home/steam/server-files
+              name: datadir
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- with .Values.probes.startup }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.probes.liveness }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.probes.readiness }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- if .Values.persistence.enabled }}
+      volumes:
+        - name: datadir
+          persistentVolumeClaim:
+            {{- if not .Values.persistence.existingClaim }}
+            claimName: {{ include "windrose-k8s.fullname" . }}
+            {{ else }}
+            claimName: "{{ .Values.persistence.existingClaim }}"
+            {{- end }}
+      {{- end }}

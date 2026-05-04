@@ -1,0 +1,182 @@
+# -- Override the name of the chart.
+# Default is the chart name.
+nameOverride: ""
+
+# -- Override the full name of the chart.
+# Default is a combination of release name and chart name.
+fullnameOverride: ""
+
+# -- Timezone setting for the server.
+tz: "UTC"
+
+image:
+  # -- Container registry for the image.
+  registry: docker.io
+  # -- Image repository
+  repository: indifferentbroccoli/windrose-server-docker
+  # -- Image pull policy
+  pullPolicy: IfNotPresent
+  # -- Overrides the image tag.
+  # Default is the chart appVersion.
+  tag: ""
+
+# -- Update strategy for deployments.
+updateStrategy:
+  type: Recreate
+
+# -- Termination grace period.
+# The image's entrypoint asks for a 30s grace window for clean shutdown.
+terminationGracePeriodSeconds: 30
+
+service:
+  # -- Service type (e.g., LoadBalancer, ClusterIP, NodePort)
+  type: LoadBalancer
+
+gameServer:
+  # -- Invite code players use to join. **Required.**
+  # 6+ chars, `0-9 a-z A-Z`, case-sensitive. Shared with players, so it is
+  # treated as configuration rather than a secret.
+  inviteCode: ""
+  # -- Custom server name shown in the server browser.
+  # If unset, defaults to `windrose_<random6>`.
+  serverName: ""
+  # -- Number of players allowed on the server concurrently.
+  players: 10
+  # -- Region for the matchmaking proxy.
+  # One of `SEA`, `CIS`, `EU`, or empty string for auto-select.
+  region: ""
+  # -- Name of an existing secret for the server password.
+  # The secret must contain a `server-password` key.
+  existingSecret: ""
+  # -- Server password.
+  # If one is not provided and an existing secret it not provided, one will be generated.
+  password: ""
+  directConnection:
+    # -- Enable direct (IP:port) connection mode.
+    # When false, players join via `inviteCode` through the matchmaking proxy.
+    enabled: false
+    # -- Proxy bind address for direct connection mode (`DIRECT_CONNECTION_PROXY_ADDRESS`).
+    proxyAddress: "0.0.0.0"
+    service:
+      # -- Service port for the game server.
+      # Exposed on both TCP and UDP. The image always listens on this port.
+      port: 7777
+      # -- (int) Node port for the game server (TCP, for NodePort service type).
+      nodePortTcp:
+      # -- (int) Node port for the game server (UDP, for NodePort service type).
+      nodePortUdp:
+  # -- P2P proxy bind address (`P2P_PROXY_ADDRESS`).
+  # Leave at 127.0.0.1 for normal Docker/K8s networking.
+  # For LAN play, set to the node's LAN IP and use host networking.
+  p2pProxyAddress: "127.0.0.1"
+  # -- Whether the image should auto-generate `ServerDescription.json` and
+  # `WorldDescription.json` from environment variables on first boot.
+  generateSettings: true
+  # -- Enable verbose Wine logging.
+  wineVerbose: false
+  # -- Install the standalone UE4SS runtime.
+  ue4ssEnabled: false
+  update:
+    # -- Run SteamCMD update/validate on every container start.
+    onStart: true
+
+windrosePlus:
+  # -- Enable the optional Windrose+ admin dashboard / RCON addon.
+  enabled: false
+  # -- Pin a specific Windrose+ release tag (e.g. `vX.Y.Z`).
+  # Empty string uses the image's default version.
+  version: ""
+  # -- Name of an existing secret for the Windrose+ RCON (dashboard) password.
+  # The secret must contain a `windrose-plus-rcon-password` key.
+  existingSecret: ""
+  # -- Windrose+ RCON (dashboard) password.
+  # If one is not provided and Windrose+ is enabled, one will be generated.
+  rconPassword: ""
+  service:
+    # -- Service port for the Windrose+ web dashboard (TCP).
+    port: 8780
+    # -- (int) Node port for the dashboard (for NodePort service type).
+    nodePort:
+
+# -- Define extra environment variables to pass directly to the container.
+# Any env vars which are set by other values will be overridden.
+extraEnv: {}
+
+persistence:
+  # -- Enable or disable persistence.
+  enabled: true
+  # -- Name of an existing persistentVolumeClaim.
+  existingClaim: ""
+  # -- Storage class name for the PVC.
+  storageClassName: ""
+  # -- Access mode for the persistent volume.
+  accessMode: ReadWriteOnce
+  # -- Prevent Helm from deleting the PVC.
+  # Some storageClasses (such as the local-path-provisioner installed by default by k3s) have reclaimPolicy: Delete.
+  preventDelete: true
+  # -- Size of the persistent volume.
+  # The image needs ~35 GiB for the Wine prefix and game files; default leaves headroom for saves.
+  size: 40Gi
+
+resources:
+  # -- Resource limits (CPU, Memory) for the server.
+  limits:
+    memory: 16Gi
+    cpu: 4
+  # -- Resource requests (CPU, Memory) for the server.
+  requests:
+    memory: 12Gi
+    cpu: 2
+
+# -- Startup, liveness, and readiness probes.
+probes:
+  # -- Startup probe. Gates liveness/readiness until the server is up.
+  startup: {}
+  #   tcpSocket:
+  #     port: gameserver-tcp
+  #   periodSeconds: 10
+  #   failureThreshold: 60
+  # -- Liveness probe.
+  liveness: {}
+  #   exec:
+  #     command:
+  #     - sh
+  #     - -c
+  #     - pgrep -f WindroseServer > /dev/null || exit 1
+  #   periodSeconds: 30
+  #   failureThreshold: 5
+  #   timeoutSeconds: 5
+  # -- Readiness probe. Use the dashboard port when Windrose+ is enabled.
+  readiness: {}
+  #   tcpSocket:
+  #     port: dashboard
+  #   periodSeconds: 30
+  #   failureThreshold: 10
+
+serviceAccount:
+  # -- Specifies whether a service account should be created.
+  create: false
+  # -- Annotations to add to the service account.
+  annotations: {}
+  # -- The name of the service account.
+  name: ""
+
+# -- Node selector for pod scheduling.
+nodeSelector: {}
+
+# -- Affinity rules for pod scheduling.
+affinity: {}
+
+# -- Tolerations for pod scheduling.
+tolerations: {}
+
+# -- Annotations to add to the pod.
+podAnnotations: {}
+
+# -- Security context for the pod.
+# `fsGroup: 1000` matches the `steam` user inside the image so the PVC is writable.
+podSecurityContext:
+  fsGroup: 1000
+
+# -- Security context for the pod containers.
+securityContext: {}

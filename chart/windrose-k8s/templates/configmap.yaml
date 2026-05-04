@@ -1,0 +1,34 @@
+{{- if not .Values.gameServer.inviteCode -}}
+{{- fail "gameServer.inviteCode is required" -}}
+{{- end -}}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "windrose-k8s.fullname" . }}
+  labels:
+    {{- include "windrose-k8s.labels" . | nindent 4 }}
+data:
+  TZ: "{{ .Values.tz }}"
+  SERVER_NAME: "{{ regexReplaceAll "\\W+" (default (printf "%s_%s" "windrose" (randAlphaNum 6 | nospace)) .Values.gameServer.serverName) "_" }}"
+  MAX_PLAYERS: "{{ .Values.gameServer.players | int }}"
+  INVITE_CODE: "{{ .Values.gameServer.inviteCode }}"
+  USE_DIRECT_CONNECTION: "{{ .Values.gameServer.directConnection.enabled }}"
+  SERVER_PORT: "{{ .Values.gameServer.directConnection.service.port | int }}"
+  DIRECT_CONNECTION_PROXY_ADDRESS: "{{ .Values.gameServer.directConnection.proxyAddress }}"
+  USER_SELECTED_REGION: "{{ .Values.gameServer.region }}"
+  P2P_PROXY_ADDRESS: "{{ .Values.gameServer.p2pProxyAddress }}"
+  GENERATE_SETTINGS: "{{ .Values.gameServer.generateSettings }}"
+  WINE_VERBOSE: "{{ .Values.gameServer.wineVerbose }}"
+  UE4SS_ENABLED: "{{ .Values.gameServer.ue4ssEnabled }}"
+  UPDATE_ON_START: "{{ .Values.gameServer.update.onStart }}"
+  WINDROSE_PLUS_ENABLED: "{{ .Values.windrosePlus.enabled }}"
+  {{- if .Values.windrosePlus.enabled }}
+  WINDROSE_PLUS_DASHBOARD_PORT: "{{ .Values.windrosePlus.service.port | int }}"
+  {{- if .Values.windrosePlus.version }}
+  WINDROSE_PLUS_VERSION: "{{ .Values.windrosePlus.version }}"
+  {{- end }}
+  {{- end }}
+  {{- range $key, $value := .Values.extraEnv }}
+  {{ $key }}: "{{ $value }}"
+  {{- end }}

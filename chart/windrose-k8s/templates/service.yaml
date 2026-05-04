@@ -1,0 +1,35 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "windrose-k8s.fullname" . }}
+  labels:
+    {{- include "windrose-k8s.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: gameserver-tcp
+      port: {{ .Values.gameServer.directConnection.service.port | int }}
+      protocol: TCP
+      targetPort: gameserver-tcp
+      {{- if eq .Values.service.type "NodePort" }}
+      nodePort: {{ default "" .Values.gameServer.directConnection.service.nodePortTcp | int }}
+      {{- end }}
+    - name: gameserver-udp
+      port: {{ .Values.gameServer.directConnection.service.port | int }}
+      protocol: UDP
+      targetPort: gameserver-udp
+      {{- if eq .Values.service.type "NodePort" }}
+      nodePort: {{ default "" .Values.gameServer.directConnection.service.nodePortUdp | int }}
+      {{- end }}
+    {{- if .Values.windrosePlus.enabled }}
+    - name: dashboard
+      port: {{ .Values.windrosePlus.service.port | int }}
+      protocol: TCP
+      targetPort: dashboard
+      {{- if eq .Values.service.type "NodePort" }}
+      nodePort: {{ default "" .Values.windrosePlus.service.nodePort | int }}
+      {{- end }}
+    {{- end }}
+  selector:
+    {{- include "windrose-k8s.selectorLabels" . | nindent 4 }}
