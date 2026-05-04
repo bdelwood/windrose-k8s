@@ -20,6 +20,10 @@ image:
   # Default is the chart appVersion.
   tag: ""
 
+# -- Image pull secrets for accessing private container registries.
+# Each entry is an object with a `name` field, e.g. `[{ name: my-registry-creds }]`.
+imagePullSecrets: []
+
 # -- Update strategy for deployments.
 updateStrategy:
   type: Recreate
@@ -33,9 +37,15 @@ service:
   type: LoadBalancer
 
 gameServer:
+  # -- UID the `steam` user runs as inside the container.
+  # The image's entrypoint requires this to be set; if either `puid` or `pgid`
+  # is empty, the container exits immediately.
+  # Should match `podSecurityContext.fsGroup` so the PVC stays writable.
+  puid: 1000
+  # -- GID the `steam` user runs as inside the container. See `puid`.
+  pgid: 1000
   # -- Invite code players use to join. **Required.**
-  # 6+ chars, `0-9 a-z A-Z`, case-sensitive. Shared with players, so it is
-  # treated as configuration rather than a secret.
+  # 6+ chars, `0-9 a-z A-Z`, case-sensitive. Shared with players.
   inviteCode: ""
   # -- Custom server name shown in the server browser.
   # If unset, defaults to `windrose_<random6>`.
@@ -102,6 +112,14 @@ windrosePlus:
 # Any env vars which are set by other values will be overridden.
 extraEnv: {}
 
+# -- Extra volumes to add to the pod.
+# Useful for mounting ConfigMaps with custom UE4SS mod files, override `.ini`
+# snippets, or supplemental Windrose+ configs into `/home/steam/server-files/...`.
+extraVolumes: []
+
+# -- Extra volume mounts to add to the container. Pairs with `extraVolumes`.
+extraVolumeMounts: []
+
 persistence:
   # -- Enable or disable persistence.
   enabled: true
@@ -132,17 +150,21 @@ resources:
 probes:
   # -- Startup probe. Gates liveness/readiness until the server is up.
   startup: {}
-  #   tcpSocket:
-  #     port: gameserver-tcp
+  #   exec:
+  #     command:
+  #     - sh
+  #     - -c
+  #     - pgrep wine > /dev/null || exit 1
   #   periodSeconds: 10
-  #   failureThreshold: 60
+  #   failureThreshold: 60   # 60 * 10s = 10 min budget for first boot
+  #   timeoutSeconds: 5
   # -- Liveness probe.
   liveness: {}
   #   exec:
   #     command:
   #     - sh
   #     - -c
-  #     - pgrep -f WindroseServer > /dev/null || exit 1
+  #     - pgrep wine > /dev/null || exit 1
   #   periodSeconds: 30
   #   failureThreshold: 5
   #   timeoutSeconds: 5

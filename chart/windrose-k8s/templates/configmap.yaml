@@ -10,6 +10,8 @@ metadata:
     {{- include "windrose-k8s.labels" . | nindent 4 }}
 data:
   TZ: "{{ .Values.tz }}"
+  PUID: "{{ .Values.gameServer.puid }}"
+  PGID: "{{ .Values.gameServer.pgid }}"
   SERVER_NAME: "{{ regexReplaceAll "\\W+" (default (printf "%s_%s" "windrose" (randAlphaNum 6 | nospace)) .Values.gameServer.serverName) "_" }}"
   MAX_PLAYERS: "{{ .Values.gameServer.players | int }}"
   INVITE_CODE: "{{ .Values.gameServer.inviteCode }}"

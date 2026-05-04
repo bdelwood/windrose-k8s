@@ -18,6 +18,8 @@ Kubernetes: `>=1.32.0-0`
 |-----|------|---------|-------------|
 | affinity | object | `{}` | Affinity rules for pod scheduling. |
 | extraEnv | object | `{}` | Define extra environment variables to pass directly to the container. Any env vars which are set by other values will be overridden. |
+| extraVolumeMounts | list | `[]` | Extra volume mounts to add to the container. Pairs with `extraVolumes`. |
+| extraVolumes | list | `[]` | Extra volumes to add to the pod. Useful for mounting ConfigMaps with custom UE4SS mod files, override `.ini` snippets, or supplemental Windrose+ configs into `/home/steam/server-files/...`. |
 | fullnameOverride | string | `""` | Override the full name of the chart. Default is a combination of release name and chart name. |
 | gameServer.directConnection.enabled | bool | `false` | Enable direct (IP:port) connection mode. When false, players join via `inviteCode` through the matchmaking proxy. |
 | gameServer.directConnection.proxyAddress | string | `"0.0.0.0"` | Proxy bind address for direct connection mode (`DIRECT_CONNECTION_PROXY_ADDRESS`). |
@@ -26,10 +28,12 @@ Kubernetes: `>=1.32.0-0`
 | gameServer.directConnection.service.port | int | `7777` | Service port for the game server. Exposed on both TCP and UDP. The image always listens on this port. |
 | gameServer.existingSecret | string | `""` | Name of an existing secret for the server password. The secret must contain a `server-password` key. |
 | gameServer.generateSettings | bool | `true` | Whether the image should auto-generate `ServerDescription.json` and `WorldDescription.json` from environment variables on first boot. |
-| gameServer.inviteCode | string | `""` | Invite code players use to join. **Required.** 6+ chars, `0-9 a-z A-Z`, case-sensitive. Shared with players, so it is treated as configuration rather than a secret. |
+| gameServer.inviteCode | string | `""` | Invite code players use to join. **Required.** 6+ chars, `0-9 a-z A-Z`, case-sensitive. Shared with players. |
 | gameServer.p2pProxyAddress | string | `"127.0.0.1"` | P2P proxy bind address (`P2P_PROXY_ADDRESS`). Leave at 127.0.0.1 for normal Docker/K8s networking. For LAN play, set to the node's LAN IP and use host networking. |
 | gameServer.password | string | `""` | Server password. If one is not provided and an existing secret it not provided, one will be generated. |
+| gameServer.pgid | int | `1000` | GID the `steam` user runs as inside the container. See `puid`. |
 | gameServer.players | int | `10` | Number of players allowed on the server concurrently. |
+| gameServer.puid | int | `1000` | UID the `steam` user runs as inside the container. The image's entrypoint requires this to be set; if either `puid` or `pgid` is empty, the container exits immediately. Should match `podSecurityContext.fsGroup` so the PVC stays writable. |
 | gameServer.region | string | `""` | Region for the matchmaking proxy. One of `SEA`, `CIS`, `EU`, or empty string for auto-select. |
 | gameServer.serverName | string | `""` | Custom server name shown in the server browser. If unset, defaults to `windrose_<random6>`. |
 | gameServer.ue4ssEnabled | bool | `false` | Install the standalone UE4SS runtime. |
@@ -39,6 +43,7 @@ Kubernetes: `>=1.32.0-0`
 | image.registry | string | `"docker.io"` | Container registry for the image. |
 | image.repository | string | `"indifferentbroccoli/windrose-server-docker"` | Image repository |
 | image.tag | string | `""` | Overrides the image tag. Default is the chart appVersion. |
+| imagePullSecrets | list | `[]` | Image pull secrets for accessing private container registries. Each entry is an object with a `name` field, e.g. `[{ name: my-registry-creds }]`. |
 | nameOverride | string | `""` | Override the name of the chart. Default is the chart name. |
 | nodeSelector | object | `{}` | Node selector for pod scheduling. |
 | persistence.accessMode | string | `"ReadWriteOnce"` | Access mode for the persistent volume. |

@@ -38,6 +38,10 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       restartPolicy: Always
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
       containers:
@@ -74,10 +78,15 @@ spec:
               containerPort: {{ .Values.windrosePlus.service.port | int }}
               protocol: TCP
             {{- end }}
+          {{- if or .Values.persistence.enabled .Values.extraVolumeMounts }}
           volumeMounts:
-          {{- if .Values.persistence.enabled }}
+            {{- if .Values.persistence.enabled }}
             - mountPath: /home/steam/server-files
               name: datadir
+            {{- end }}
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
@@ -93,8 +102,9 @@ spec:
           readinessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-      {{- if .Values.persistence.enabled }}
+      {{- if or .Values.persistence.enabled .Values.extraVolumes }}
       volumes:
+        {{- if .Values.persistence.enabled }}
         - name: datadir
           persistentVolumeClaim:
             {{- if not .Values.persistence.existingClaim }}
@@ -102,4 +112,8 @@ spec:
             {{ else }}
             claimName: "{{ .Values.persistence.existingClaim }}"
             {{- end }}
+        {{- end }}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
       {{- end }}
